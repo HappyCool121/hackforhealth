@@ -1,0 +1,12 @@
+SYNTHETIC DEMO — NOT A REAL HEALTHCARE DOCUMENT
+SCREENING VOUCHER
+Patient: Jamie Tan
+ID last four: 123A
+Clinic: Central Family Clinic
+Clinic ID: clinic-central
+Organisation code: ORG-DEMO
+Package code: PKG-SCREEN
+Billing arrangement: direct
+Payer: Demo Health Fund
+Valid to: 31 December 2027
+

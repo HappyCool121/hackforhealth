@@ -1,0 +1,11 @@
+:8080 {
+  handle /api/* {
+    reverse_proxy api:8000
+  }
+  handle /docs* {
+    redir * /api/docs
+  }
+  handle {
+    reverse_proxy web:3000
+  }
+}

@@ -1,0 +1,8 @@
+SYNTHETIC DEMO — NOT A REAL HEALTHCARE DOCUMENT
+EMPLOYER AUTHORIZATION
+Patient: Alex Example
+Clinic: West Demo Clinic
+Organisation code: ORG-OLD
+Valid to: 31 December 2024
+Billing arrangement: reimbursement
+

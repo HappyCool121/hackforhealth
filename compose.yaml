@@ -1,0 +1,107 @@
+name: clinicpass
+
+services:
+  gateway:
+    image: caddy:2.10-alpine
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./infra/Caddyfile:/etc/caddy/Caddyfile:ro
+    depends_on:
+      web:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+
+  web:
+    build: ./apps/web
+    environment:
+      HOSTNAME: 0.0.0.0
+      API_INTERNAL_URL: http://api:8000
+      NEXT_PUBLIC_APP_NAME: ClinicPass
+    expose:
+      - "3000"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:3000/api/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    depends_on:
+      api:
+        condition: service_healthy
+
+  api:
+    build: ./services/api
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://clinicpass:clinicpass@postgres:5432/clinicpass
+      UPLOAD_DIR: /data/uploads
+    expose:
+      - "8000"
+    volumes:
+      - uploads:/data/uploads
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  migrate:
+    build: ./services/api
+    command: ["alembic", "upgrade", "head"]
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://clinicpass:clinicpass@postgres:5432/clinicpass
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  worker:
+    build: ./services/api
+    command: ["python", "-m", "app.worker"]
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://clinicpass:clinicpass@postgres:5432/clinicpass
+      UPLOAD_DIR: /data/uploads
+    volumes:
+      - uploads:/data/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: clinicpass
+      POSTGRES_USER: clinicpass
+      POSTGRES_PASSWORD: clinicpass
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U clinicpass -d clinicpass"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  mailpit:
+    image: axllent/mailpit:v1.27
+    ports:
+      - "8025:8025"
+    expose:
+      - "1025"
+
+  mock-clinic-assist:
+    build: ./services/mock-clinic-assist
+    expose:
+      - "8090"
+
+volumes:
+  postgres-data:
+  uploads:
