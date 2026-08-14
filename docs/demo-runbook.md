@@ -1,37 +1,29 @@
-# Five-minute demo runbook
+# ClinicPass V2 demo runbook
 
-## Prepare
+Use only fictional identities and bundled watermarked documents. Warm the Web, core, and mock services before the demo. Confirm `/api/v1/health` reports the intended extraction provider and the mock `/health` reports schema `2.0.0`.
 
-1. Copy `.env.example` to `.env`.
-2. For the live AI demo set `AI_PROVIDER=agnes` and add `AGNES_API_KEY`. Keep the fixture setting for rehearsals without network access.
-3. Run `make up`, then `make smoke`.
-4. Open <http://localhost:8080> and Mailpit at <http://localhost:8025>. On the tablet, open <http://localhost:8080/demo/tablet-documents>.
+## Clean path
 
-## Story
+1. On the phone, use the clearly labelled Singpass/MyInfo simulation. Point out that no real identity service is contacted.
+2. Confirm the prefilled reusable profile and scheduled visit. Select `BASIC_SCREEN` and optionally `CBC`.
+3. Complete `general-health@1.0`; call out the 11 explicitly confirmed prefilled fields instead of re-entry.
+4. Photograph or upload the synthetic company medical chit. Show scan state, queued processing, field support, and no uncalibrated confidence percentage.
+5. Review and submit. Keep the patient queue page open.
+6. On clinic desktop, show the active immutable reference version and 11 deterministic findings. Describe the outcome as provisional administrative eligibility only.
+7. In the two-pane evidence workspace, select a field to show its page/evidence IDs and bounding box. Make a harmless correction only in the exception demo, because corrections preserve the original and stale eligibility.
+8. Approve only when the server unlocks the button: `READY_FOR_REVIEW`, fresh matching input hash, no active processing, and no unresolved finding.
+9. On arrival, record identity document, e-card, and original supporting documents as three separate attestations. Show that check-in occurs only after the third.
+10. Export with the Clinic Assist V2 action. Explain JSON Schema validation and idempotent replay; the mock is not a real Clinic Assist connection.
 
-1. **Patient identity:** choose “Start pre-registration,” open the clearly labelled Singpass demo, simulate approval, and allow the fictional Jamie Tan MyInfo profile.
-2. **Visit:** select a reason for visit and answer whether documents are required. Point out that manual entry and a documentless clinic-review path remain available.
-3. **Document:** select “Company medical chit” on the tablet, tap “Take a photo” on the phone, and photograph the displayed form. This starts AGNES parsing through the real upload endpoint. The one-click shortcut remains available as a fallback.
-4. Show the patient-safe extracted summary and AGNES live/fixture label, continue to review, and submit. Point out the newly issued live queue number and waiting destination. If parsing is still active, explain that it finishes asynchronously.
-5. **Clinic:** sign in as the assistant and open the case from the review queue. Show the visit reason and document declaration.
-6. Show six deterministic checks, extracted fields, and page-grounded OCR evidence. Explain that AGNES extracts while rules and people decide.
-7. Keep the patient page visible on the phone. Approve for check-in on the clinic/tablet surface and show the phone update automatically to “Registration Counter 2.”
-8. In the clinic workspace confirm all three on-site checks. Show the patient phone update automatically to “Consultation Room 3,” then export to mock Clinic Assist.
-9. Sign in as manager to show synthetic metrics, reference data, and the immutable event trail.
+## Exception paths
 
-## Failure path
+- Use the six-month check-up fixture for a wrong-clinic block. Approval from `NEEDS_ACTION` is prohibited; update/resubmit before any decision.
+- Use an unknown package or outside service to demonstrate that non-empty strings cannot pass reference validation.
+- As an assistant, request an override for one finding. As a manager, apply that finding-level override with a reason; show that other findings remain unresolved.
+- Correct a field beside its original document and show that evaluation becomes stale and refreshes before approval.
+- Submit no document with a `no`/`unsure` declaration to demonstrate `REVIEW_REQUIRED`, not manufactured eligibility.
+- Reuse the same export idempotency key and show the same acceptance reference.
 
-Use the one-click “Six-month check-up” sample to demonstrate a Central/West clinic mismatch and “Request information.” Mailpit displays the simulated patient message.
+## Boundaries to say aloud
 
-The fifth tablet sample is a fictional driver's-licence renewal medical form. It is deliberately labelled as neither a licence, government form, nor medical clearance.
-
-## Documentless path
-
-Choose GP consultation and “No documents needed,” continue without uploading, and submit. The case reaches staff review with a `REVIEW` supporting-document check rather than a false failure.
-
-## Accounts
-
-- Assistant: `assistant@clinicpass.test` / `DemoAssistant1!`
-- Manager: `manager@clinicpass.test` / `DemoManager1!`
-
-Never use real patient information in a demo.
+ClinicPass does not remotely verify identity or e-cards, make clinical or fitness decisions, connect to real Singpass/payers/Clinic Assist/NEHR, guarantee reimbursement, or determine the final patient-payable amount. Staff sight originals on site, and all repository/demo data is synthetic.

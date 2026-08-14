@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 import runpy
 
 from pypdf import PdfReader
@@ -46,9 +47,14 @@ def main() -> None:
         "AGNES 2.0 Flash",
         "OpenAI Codex",
         "Microsoft Copilot Studio",
+        "42",
         "https://github.com/HappyCool121/hackforhealth",
     ):
         require(phrase in main_text, f"Main report is missing required text: {phrase}")
+    require(
+        re.search(r"11\s+deterministic\s+checks", main_text) is not None,
+        "Main report is missing the 11 deterministic checks assertion",
+    )
 
     source = runpy.run_path(str(ROOT / "scripts" / "render-submission.py"))
     summary_words = len(source["EXECUTIVE_SUMMARY"].split())

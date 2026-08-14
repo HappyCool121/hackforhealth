@@ -108,10 +108,12 @@ class AgnesProvider:
         )
         index = {item["evidence_id"]: item for item in evidence}
         cited = []
+        field_evidence: dict[str, list[str]] = {}
         for citation in extracted.get("citations", []):
             if citation.get("evidence_id") in index:
                 cited.append(index[citation["evidence_id"]])
-        result = ExtractedDocument(category=extracted.get("category", "unknown"), fields=extracted.get("fields", {}), evidence=cited, warnings=extracted.get("warnings", []))
+                field_evidence.setdefault(str(citation.get("field", "")), []).append(citation["evidence_id"])
+        result = ExtractedDocument(category=extracted.get("category", "unknown"), fields=extracted.get("fields", {}), evidence=cited, warnings=extracted.get("warnings", []), field_evidence=field_evidence)
         return result
 
 
@@ -161,7 +163,14 @@ class FixtureProvider:
         }
         cited = evidence[: min(12, len(evidence))]
         warnings = ["Deterministic fixture extraction—not a live AGNES result."]
-        return ExtractedDocument(category=category, fields=fields, evidence=cited, warnings=warnings)
+        evidence_ids = [item["evidence_id"] for item in cited]
+        return ExtractedDocument(
+            category=category,
+            fields=fields,
+            evidence=cited,
+            warnings=warnings,
+            field_evidence={key: evidence_ids for key, value in fields.items() if value},
+        )
 
 
 def get_provider():

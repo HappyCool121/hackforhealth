@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://clinicpass.demo/schemas/clinic-assist-v2.schema.json",
+  "title": "ClinicPass Clinic Assist Export V2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "idempotency_key", "case", "patient", "visit", "questionnaire", "eligibility", "requested_services", "documents", "staff_review", "corrections", "overrides", "on_site_checks"],
+  "properties": {
+    "schema_version": {"const": "2.0.0"},
+    "idempotency_key": {"type": "string", "minLength": 8, "maxLength": 100},
+    "case": {
+      "type": "object",
+      "required": ["id", "reference", "status", "clinic_id"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "reference": {"type": "string", "minLength": 1},
+        "status": {"const": "CHECKED_IN"},
+        "clinic_id": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "patient": {
+      "type": "object",
+      "required": ["full_name", "masked_identity", "email"],
+      "properties": {
+        "full_name": {"type": "string", "minLength": 2},
+        "masked_identity": {"type": "string", "pattern": "^••••.{4}$"},
+        "date_of_birth": {"type": ["string", "null"], "format": "date"}
+      },
+      "additionalProperties": true
+    },
+    "visit": {"type": "object", "required": ["appointment_type", "appointment_date", "visit_reason"]},
+    "questionnaire": {"type": "array"},
+    "eligibility": {"type": ["object", "null"]},
+    "requested_services": {"type": "array", "items": {"type": "string"}},
+    "documents": {"type": "array"},
+    "staff_review": {"type": "array", "minItems": 1},
+    "corrections": {"type": "array"},
+    "overrides": {"type": "array"},
+    "on_site_checks": {"type": "array", "minItems": 3}
+  }
+}

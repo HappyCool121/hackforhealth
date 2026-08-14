@@ -32,6 +32,7 @@ class CaseCreate(BaseModel):
     document_requirement: DocumentRequirement = "yes"
     identity_source: IdentitySource = "manual"
     clinic_id: str = "clinic-central"
+    requested_services: list[str] = []
 
 
 class CasePatch(BaseModel):
@@ -41,12 +42,61 @@ class CasePatch(BaseModel):
     appointment_date: date | None = None
     visit_reason: VisitReason | None = None
     document_requirement: DocumentRequirement | None = None
+    requested_services: list[str] | None = None
 
 
 class ReviewAction(BaseModel):
     action: Literal["request_information", "approve", "cancel"]
     reason: str = Field(min_length=3, max_length=500)
     override_failures: bool = False
+
+
+class PatientAccessRequest(BaseModel):
+    bootstrap_code: str = Field(min_length=16, max_length=200)
+
+
+class PatientProfilePatch(BaseModel):
+    full_name: str | None = Field(default=None, min_length=2, max_length=150)
+    identity_type: str | None = Field(default=None, max_length=30)
+    identity_number: str | None = Field(default=None, min_length=4, max_length=80)
+    date_of_birth: date | None = None
+    email: str | None = Field(default=None, pattern=EMAIL_PATTERN, max_length=255)
+    country_code: str | None = Field(default=None, max_length=8)
+    phone: str | None = Field(default=None, max_length=40)
+    address: str | None = Field(default=None, max_length=500)
+    postal_code: str | None = Field(default=None, max_length=20)
+    ethnicity: str | None = Field(default=None, max_length=60)
+    sex: str | None = Field(default=None, max_length=30)
+    pregnancy_details: dict[str, Any] | None = None
+    confirmed: bool = False
+
+
+class QuestionnairePut(BaseModel):
+    definition_version: Literal["1.0"] = "1.0"
+    responses: dict[str, Any]
+    consents: dict[str, bool]
+    signature_metadata: dict[str, Any]
+    confirmed_prefill_fields: list[str] = []
+
+
+class CorrectionPatch(BaseModel):
+    corrected_value: str = Field(min_length=1, max_length=1000)
+    reason: str = Field(min_length=3, max_length=500)
+
+
+class OverrideCreate(BaseModel):
+    finding_id: str
+    reason: str = Field(min_length=5, max_length=500)
+
+
+class OverrideRequestCreate(BaseModel):
+    finding_id: str
+    reason: str = Field(min_length=5, max_length=500)
+
+
+class AttestationCreate(BaseModel):
+    attestation_type: Literal["IDENTITY_DOCUMENT", "ECARD", "ORIGINAL_SUPPORTING_DOCUMENTS"]
+    confirmed: Literal[True]
 
 
 class CheckInRequest(BaseModel):
@@ -77,6 +127,7 @@ class ExtractedDocument(BaseModel):
     fields: dict[str, Any]
     evidence: list[Evidence]
     warnings: list[str] = []
+    field_evidence: dict[str, list[str]] = {}
 
 
 class AuditOut(BaseModel):

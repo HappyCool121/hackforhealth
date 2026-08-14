@@ -13,10 +13,16 @@ __pycache__/
 .mypy_cache/
 .venv/
 .uv-cache/
+.npm-cache/
 uploads/
 artifacts/
+*.db
+*.db-shm
+*.db-wal
 *.log
 *.tsbuildinfo
 .DS_Store
 .playwright-cli/
+test-results/
+submission-public/
 tmp/

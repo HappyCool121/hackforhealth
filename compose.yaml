@@ -18,7 +18,13 @@ services:
     environment:
       HOSTNAME: 0.0.0.0
       API_INTERNAL_URL: http://api:8000
+      BACKEND_GATEWAY_SECRET: ${BACKEND_GATEWAY_SECRET:?Set BACKEND_GATEWAY_SECRET in .env}
       NEXT_PUBLIC_APP_NAME: ClinicPass
+      SHOW_DEMO_CREDENTIALS: ${SHOW_DEMO_CREDENTIALS:-true}
+      STAFF_ASSISTANT_EMAIL: ${STAFF_ASSISTANT_EMAIL:-assistant@clinicpass.test}
+      STAFF_ASSISTANT_PASSWORD: ${STAFF_ASSISTANT_PASSWORD:?Set STAFF_ASSISTANT_PASSWORD in .env}
+      STAFF_MANAGER_EMAIL: ${STAFF_MANAGER_EMAIL:-manager@clinicpass.test}
+      STAFF_MANAGER_PASSWORD: ${STAFF_MANAGER_PASSWORD:?Set STAFF_MANAGER_PASSWORD in .env}
     expose:
       - "3000"
     healthcheck:
@@ -32,10 +38,16 @@ services:
 
   api:
     build: ./services/api
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
     env_file: .env
     environment:
-      DATABASE_URL: postgresql+psycopg://clinicpass:clinicpass@postgres:5432/clinicpass
+      DATABASE_URL: postgresql+psycopg://clinicpass:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/clinicpass
       UPLOAD_DIR: /data/uploads
+      SESSION_SECRET: ${SESSION_SECRET:?Set SESSION_SECRET in .env}
+      IDENTITY_HMAC_KEY: ${IDENTITY_HMAC_KEY:?Set IDENTITY_HMAC_KEY in .env}
+      BACKEND_GATEWAY_SECRET: ${BACKEND_GATEWAY_SECRET:?Set BACKEND_GATEWAY_SECRET in .env}
+      CLINIC_ASSIST_SECRET: ${CLINIC_ASSIST_SECRET:?Set CLINIC_ASSIST_SECRET in .env}
+      CLINIC_ASSIST_URL: http://mock-clinic-assist:8090/api/v1/patients
     expose:
       - "8000"
     volumes:
@@ -56,7 +68,7 @@ services:
     command: ["alembic", "upgrade", "head"]
     env_file: .env
     environment:
-      DATABASE_URL: postgresql+psycopg://clinicpass:clinicpass@postgres:5432/clinicpass
+      DATABASE_URL: postgresql+psycopg://clinicpass:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/clinicpass
     depends_on:
       postgres:
         condition: service_healthy
@@ -66,7 +78,7 @@ services:
     command: ["python", "-m", "app.worker"]
     env_file: .env
     environment:
-      DATABASE_URL: postgresql+psycopg://clinicpass:clinicpass@postgres:5432/clinicpass
+      DATABASE_URL: postgresql+psycopg://clinicpass:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/clinicpass
       UPLOAD_DIR: /data/uploads
     volumes:
       - uploads:/data/uploads
@@ -81,7 +93,7 @@ services:
     environment:
       POSTGRES_DB: clinicpass
       POSTGRES_USER: clinicpass
-      POSTGRES_PASSWORD: clinicpass
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
     volumes:
       - postgres-data:/var/lib/postgresql
     healthcheck:
@@ -99,6 +111,8 @@ services:
 
   mock-clinic-assist:
     build: ./services/mock-clinic-assist
+    environment:
+      CLINIC_ASSIST_SECRET: ${CLINIC_ASSIST_SECRET:?Set CLINIC_ASSIST_SECRET in .env}
     expose:
       - "8090"
 

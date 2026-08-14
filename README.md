@@ -1,6 +1,6 @@
 # ClinicPass
 
-ClinicPass is a pre-registration and eligibility-readiness workflow for primary-care clinics. Patients use a clearly simulated Singpass/MyInfo handoff or manual entry, state their visit reason, and photograph or upload any supporting documents before arrival. Clinic staff review evidence-backed extraction and deterministic readiness checks. It does **not** make clinical decisions, verify identity remotely, or guarantee coverage.
+ClinicPass V2 is a provisional administrative eligibility and pre-registration workflow for primary-care clinics. It combines reusable patient profiles and versioned questionnaires with field-cited document extraction, versioned synthetic payer/package reference data, 11 deterministic eligibility rules, audited staff corrections, manager-only finding overrides, separate on-site attestations, and a canonical Clinic Assist V2 export. It does **not** make clinical decisions, verify identity or e-cards remotely, guarantee coverage, reimbursement, or the final patient-payable amount.
 
 ## Quick start
 
@@ -8,13 +8,16 @@ Runtime requirement: Docker Desktop with Compose v2. Local quality checks additi
 
 ```bash
 cp .env.example .env
+# Set the blank password and secret fields in .env before starting.
 make up
 ```
 
 Open <http://localhost:8080>. Demo staff accounts:
 
-- Assistant: `assistant@clinicpass.test` / `DemoAssistant1!`
-- Manager: `manager@clinicpass.test` / `DemoManager1!`
+- Assistant: `assistant@clinicpass.test`
+- Manager: `manager@clinicpass.test`
+
+Set both staff passwords and all blank secret values locally in `.env`; credentials are intentionally not committed.
 
 Mail notifications are visible at <http://localhost:8025>. API documentation is at <http://localhost:8080/api/docs>.
 
@@ -30,12 +33,25 @@ The patient document screen includes five watermarked synthetic PDFs. Generate t
 
 ```bash
 make test
+make benchmark-v2
 make smoke
 make demo-assets
 make export-public
 ```
 
-Architecture, demo flow, safety boundaries, and the Microsoft Copilot Studio port are documented in [`docs/`](docs/).
+## Public submission and live demo
+
+This repository, [`HappyCool121/hackforhealth`](https://github.com/HappyCool121/hackforhealth), is the sanitized public submission snapshot. The live Render application is available separately at <https://clinicpass-demo-happycool121-web.onrender.com>.
+
+This repository is **not** the Render deployment source. Commits and GitHub Actions runs here do not trigger or modify the live application, its services, its database, or its deployment configuration.
+
+See [`docs/demo-runbook.md`](docs/demo-runbook.md) for the synthetic-data demonstration flow and [`docs/render-deployment.md`](docs/render-deployment.md) for a non-operational description of the live topology. Architecture, safety boundaries, and the Microsoft Copilot Studio port are documented in [`docs/`](docs/).
+
+## Rollout and rollback
+
+The live application is deployed from the separate `clinicpass-demo` repository. Migration `0005_clinicpass_v2` in this submission preserves existing synthetic records and can be downgraded to `0004_durable_document_content`. Deployment rollback commits, branches, and feature flags belong to that separate deployment source; this repository cannot initiate a rollback or redeploy.
+
+The step-by-step procedure is in [`docs/rollback.md`](docs/rollback.md).
 
 ## Submission package
 
@@ -55,7 +71,7 @@ services/mock-clinic-assist/
 docs/                     Architecture, demo and Copilot port
 fixtures/                 Synthetic-only demo documents
 scripts/                  Validation and public export tooling
-submission-public/        Locally generated sanitized judging copy (source-workspace only)
+.github/workflows/        Migration, API/Web, browser, secret, and public-export CI
 ```
 
 ## Data statement

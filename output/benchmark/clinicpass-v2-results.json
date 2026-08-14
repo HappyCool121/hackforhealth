@@ -1,0 +1,101 @@
+{
+  "manifest_version": "clinicpass-v2-synthetic-2026.08.1",
+  "ruleset_version": "clinicpass-eligibility-2.0.0",
+  "reference_data_version": "demo-2026.08.1",
+  "generated_from_synthetic_data_only": true,
+  "scope": "Deterministic eligibility and provenance regression; not live AGNES extraction performance",
+  "scenario_pass_rate": 1.0,
+  "false_pass_rate_on_blocking_set": 0.0,
+  "evidence_policy": "Every asserted fixture field has citations or is explicitly UNSUPPORTED/CONFLICTING.",
+  "prefill_fields_available": 11,
+  "deterministic_evaluation_latency_ms": {
+    "p50": 1.483,
+    "p95": 7.08
+  },
+  "not_measured_here": [
+    "live extraction exact match",
+    "manual correction rate",
+    "human review time",
+    "ready-before-arrival rate",
+    "live provider cost per case"
+  ],
+  "scenarios": [
+    {
+      "id": "valid-clean-package",
+      "expected_outcome": "PROVISIONALLY_ELIGIBLE",
+      "actual_outcome": "PROVISIONALLY_ELIGIBLE",
+      "passed": true,
+      "evaluation_latency_ms": 7.08
+    },
+    {
+      "id": "expired-document",
+      "expected_outcome": "BLOCKED",
+      "actual_outcome": "BLOCKED",
+      "passed": true,
+      "evaluation_latency_ms": 1.83
+    },
+    {
+      "id": "wrong-patient",
+      "expected_outcome": "BLOCKED",
+      "actual_outcome": "BLOCKED",
+      "passed": true,
+      "evaluation_latency_ms": 1.61
+    },
+    {
+      "id": "wrong-clinic",
+      "expected_outcome": "BLOCKED",
+      "actual_outcome": "BLOCKED",
+      "passed": true,
+      "evaluation_latency_ms": 1.555
+    },
+    {
+      "id": "unknown-organisation",
+      "expected_outcome": "BLOCKED",
+      "actual_outcome": "BLOCKED",
+      "passed": true,
+      "evaluation_latency_ms": 1.483
+    },
+    {
+      "id": "unknown-package",
+      "expected_outcome": "BLOCKED",
+      "actual_outcome": "BLOCKED",
+      "passed": true,
+      "evaluation_latency_ms": 1.438
+    },
+    {
+      "id": "service-outside-package",
+      "expected_outcome": "BLOCKED",
+      "actual_outcome": "BLOCKED",
+      "passed": true,
+      "evaluation_latency_ms": 1.632
+    },
+    {
+      "id": "conflicting-documents",
+      "expected_outcome": "BLOCKED",
+      "actual_outcome": "BLOCKED",
+      "passed": true,
+      "evaluation_latency_ms": 1.456
+    },
+    {
+      "id": "low-quality-image",
+      "expected_outcome": "BLOCKED",
+      "actual_outcome": "BLOCKED",
+      "passed": true,
+      "evaluation_latency_ms": 1.012
+    },
+    {
+      "id": "provider-failure",
+      "expected_outcome": "BLOCKED",
+      "actual_outcome": "BLOCKED",
+      "passed": true,
+      "evaluation_latency_ms": 0.896
+    },
+    {
+      "id": "documentless-review",
+      "expected_outcome": "REVIEW_REQUIRED",
+      "actual_outcome": "REVIEW_REQUIRED",
+      "passed": true,
+      "evaluation_latency_ms": 0.856
+    }
+  ]
+}

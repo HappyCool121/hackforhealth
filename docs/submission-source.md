@@ -6,11 +6,11 @@ Team name on the cover: **ClinicPass**.
 
 ## Executive summary
 
-ClinicPass moves administrative pre-registration ahead of arrival for scheduled and walk-in primary-care visits. Patients use a clearly simulated Singpass/MyInfo handoff or manual entry, state their visit reason and document need, then photograph, upload, or select a watermarked synthetic sample. PDFs become page images and photos are normalized; AGNES receives private visual inputs together with local OCR evidence and extracts administrative facts through constrained tool calls. Six transparent rules evaluate identity details, validity, clinic restrictions, organization/package codes, supporting documents, and billing completeness. A patient who declares no documents or uncertainty can still reach staff review without a false failure. Submission issues a live queue number; clinic actions update the patient's destination in real time. Clinic staff inspect grounded evidence, resolve exceptions, and make the final administrative decision. Identity, e-card, and originals are always verified in person. The runnable Docker prototype includes responsive patient and clinic/manager Web UIs, PostgreSQL, an asynchronous worker, five tablet-ready fixtures, audit events, Mailpit notifications, mock Clinic Assist export, and a documented Microsoft Copilot Studio port. Fixture mode supports rehearsals; live AGNES errors fail visibly rather than silently substituting results. ClinicPass does not make clinical decisions or guarantee coverage.
+ClinicPass V2 moves provisional administrative eligibility and pre-registration ahead of arrival. Patients use a clearly simulated identity handoff or manual entry, confirm a reusable masked profile, complete a versioned General or Occupational Health questionnaire, choose requested services, and upload watermarked synthetic evidence. AGNES or the labelled fixture provider extracts administrative facts into field assertions with page evidence and bounding boxes. Eleven deterministic rules compare identity, validity, issuer, organisation, package, panel clinic, service coverage, supporting documents, billing route, and conflicts against immutable synthetic reference releases. Outcomes are provisional, review-required, or blocked—never guaranteed coverage. Staff review the original beside extracted fields, preserve audited corrections, and request finding-level manager overrides. Approval is rejected for stale inputs, active processing, Needs Action, or unresolved findings. Identity, e-card, and originals are attested separately on site. A schema-validating, idempotent Clinic Assist V2 mock receives the masked profile, visit, questionnaire, eligibility, service, evidence, review, correction, override, and attestation records. ClinicPass does not make clinical, fitness, remote identity, reimbursement, or final-payment decisions.
 
 ## Claim status
 
-Prototype claims in the PDF are backed by `docs/validation-results.md`. Operational time, accuracy, cost, and pilot-impact figures remain explicitly labelled measurement targets until the official fixture set and live AGNES key are supplied.
+Prototype claims in the PDF are backed by `docs/validation-results.md`. The checked-in synthetic benchmark reports deterministic rule/provenance outcomes only. Live extraction accuracy, human review time, correction rate, ready-before-arrival rate, and provider cost remain explicitly unmeasured until the official labelled fixture set, reviewer study, and live provider billing data are supplied.
 
 ## Page-four AI disclosure
 
@@ -19,3 +19,7 @@ Prototype claims in the PDF are backed by `docs/validation-results.md`. Operatio
 - The team reviewed and validated generated code, model outputs, and submission claims.
 - Microsoft Copilot Studio is documented as a future port and was not implemented.
 - Public repository: <https://github.com/HappyCool121/hackforhealth>
+
+## Required owner metadata before final submission
+
+The repository owner must supply the institution, member names, and contact person. These values are not inferable from the source and must not be fabricated.

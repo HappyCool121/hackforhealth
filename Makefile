@@ -1,4 +1,4 @@
-.PHONY: init up down logs build lint typecheck test test-api test-web smoke smoke-agnes demo-assets export-public verify-public render-submission render-supporting render-screenshots verify-submission clean-data verify
+.PHONY: init up down logs build lint typecheck test test-api test-web test-e2e benchmark-v2 smoke smoke-agnes demo-assets export-public verify-public render-submission render-supporting render-screenshots verify-submission clean-data verify
 
 init:
 	cp -n .env.example .env || true
@@ -30,6 +30,12 @@ test-api:
 
 test-web:
 	cd apps/web && npm test
+
+test-e2e:
+	cd apps/web && npm run test:e2e
+
+benchmark-v2:
+	cd services/api && UV_CACHE_DIR=.uv-cache uv run --extra dev python ../../scripts/run-v2-benchmark.py
 
 smoke:
 	./scripts/smoke.sh

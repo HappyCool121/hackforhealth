@@ -15,12 +15,51 @@ export type DocumentRecord = {
   page_count: number;
   sha256?: string;
   status: string;
+  scan_status: string;
   processing_provider?: string;
   extracted_data: Record<string, string | null>;
   patient_summary: Record<string, string>;
   evidence: Array<{ evidence_id: string; page: number; text: string; bbox?: number[] }>;
   quality_warnings: string[];
   error?: string;
+};
+
+export type FieldAssertion = {
+  id: string;
+  field_name: string;
+  raw_value?: string;
+  normalized_value?: string;
+  original_normalized_value?: string;
+  document_id: string;
+  page?: number;
+  evidence_ids: string[];
+  bounding_boxes: number[][];
+  extraction_provider: string;
+  support_status: "SUPPORTED" | "UNSUPPORTED" | "CONFLICTING" | "STAFF_CORRECTED";
+  validation_errors: string[];
+  correction?: { id: string; reason: string; actor_user_id: string; created_at: string };
+};
+
+export type Finding = {
+  id: string;
+  code: string;
+  status: "PASS" | "FAIL" | "REVIEW";
+  critical: boolean;
+  explanation: string;
+  evidence_assertion_ids: string[];
+  reference_record_ids: string[];
+  override?: { reason: string; actor_role: string; created_at: string };
+};
+
+export type Evaluation = {
+  id: string;
+  ruleset_version: string;
+  reference_data_version: string;
+  input_hash: string;
+  evaluated_at: string;
+  outcome: "PROVISIONALLY_ELIGIBLE" | "REVIEW_REQUIRED" | "BLOCKED";
+  stale: boolean;
+  findings: Finding[];
 };
 
 export type CaseRecord = {
@@ -34,6 +73,7 @@ export type CaseRecord = {
   visit_reason: string;
   document_requirement: "yes" | "no" | "unsure";
   identity_source: "manual" | "singpass_demo";
+  requested_services: string[];
   clinic_id: string;
   status: string;
   rules: Rule[];
@@ -46,14 +86,30 @@ export type CaseRecord = {
   created_at: string;
   updated_at: string;
   documents?: DocumentRecord[];
+  assertions?: FieldAssertion[];
+  evaluation?: Evaluation;
+  profile?: Record<string, unknown>;
+  questionnaires?: Array<{ type: string; definition_version: string; responses: Record<string, unknown>; confirmed_prefill_fields: string[] }>;
+  attestations?: Array<{ type: string; actor_user_id: string; attested_at: string }>;
   access_url?: string;
+  bootstrap_code?: string;
 };
 
+function csrfToken() {
+  if (typeof document === "undefined") return undefined;
+  const value = document.cookie.split("; ").find((item) => item.startsWith("cp_csrf="));
+  return value ? decodeURIComponent(value.split("=", 2)[1]) : undefined;
+}
+
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
+  const csrf = csrfToken();
+  const headers = new Headers(init?.headers);
+  if (!(init?.body instanceof FormData)) headers.set("content-type", "application/json");
+  if (csrf && init?.method && !["GET", "HEAD"].includes(init.method.toUpperCase())) headers.set("x-csrf-token", csrf);
   const response = await fetch(`/api/v1${path}`, {
     ...init,
     credentials: "include",
-    headers: init?.body instanceof FormData ? init.headers : { "content-type": "application/json", ...init?.headers },
+    headers,
   });
   if (!response.ok) {
     const problem = await response.json().catch(() => ({ detail: response.statusText }));

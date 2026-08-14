@@ -1,7 +1,7 @@
 "use client";
 
-import { ChangeEvent, DragEvent, useCallback, useEffect, useRef, useState } from "react";
-import { useParams, useSearchParams } from "next/navigation";
+import { ChangeEvent, DragEvent, FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { useParams } from "next/navigation";
 import {
   api,
   CaseRecord,
@@ -33,8 +33,8 @@ const SUMMARY_LABELS: Record<string, string> = {
 
 function Progress({ active }: { active: number }) {
   return (
-    <div className="journeyProgress" aria-label={`Step ${active} of 4`}>
-      {["Identity", "Visit", "Documents", "Review"].map((label, index) => (
+    <div className="journeyProgress" aria-label={`Step ${active} of 6`}>
+      {["Identity", "Profile", "Visit", "Questionnaire", "Documents", "Review"].map((label, index) => (
         <div className={index + 1 <= active ? "active" : ""} key={label}>
           <span>{index + 1}</span><small>{label}</small>
         </div>
@@ -52,21 +52,22 @@ function documentStatus(document: DocumentRecord) {
 
 export default function PatientCase() {
   const { id } = useParams<{ id: string }>();
-  const search = useSearchParams();
   const cameraInput = useRef<HTMLInputElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const uploadCounter = useRef(0);
   const [record, setRecord] = useState<CaseRecord | null>(null);
-  const [stage, setStage] = useState<3 | 4>(3);
+  const [stage, setStage] = useState<4 | 5 | 6>(4);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [uploads, setUploads] = useState<Array<{ id: string; name: string; status: "uploading" | "error"; message?: string }>>([]);
-  const accessToken = search.get("token");
+  const [bootstrapCode, setBootstrapCode] = useState("");
 
   const load = useCallback(async () => {
     try {
-      setRecord(await api(`/patient/cases/${id}`));
+      const item = await api<CaseRecord>(`/patient/cases/${id}`);
+      setRecord(item);
+      if (item.status === "DRAFT" && item.questionnaires?.length) setStage((current) => current === 4 ? 5 : current);
       setError("");
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Case not found");
@@ -74,12 +75,61 @@ export default function PatientCase() {
   }, [id]);
 
   useEffect(() => {
-    async function initialLoad() {
-      if (accessToken) await api(`/patient/cases/${id}/access?token=${encodeURIComponent(accessToken)}`, { method: "POST" });
+    void load();
+  }, [load]);
+
+  async function redeemAccess() {
+    setBusy(true);
+    try {
+      await api(`/patient/cases/${id}/access`, { method: "POST", body: JSON.stringify({ bootstrap_code: bootstrapCode }) });
       await load();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Access code was not accepted");
+    } finally {
+      setBusy(false);
     }
-    void initialLoad();
-  }, [accessToken, id, load]);
+  }
+
+  async function saveQuestionnaire(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setBusy(true);
+    setError("");
+    const data = new FormData(event.currentTarget);
+    const type = record?.visit_reason.includes("occupational") || record?.visit_reason.includes("employer_insurer") ? "occupational-health" : "general-health";
+    try {
+      await api(`/patient/cases/${id}/questionnaires/${type}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          definition_version: "1.0",
+          responses: {
+            current_medication: data.get("current_medication") === "yes",
+            medication_details: data.get("medication_details") || null,
+            drug_allergies: data.get("drug_allergies") === "yes",
+            allergy_details: data.get("allergy_details") || null,
+            personal_history: data.getAll("personal_history"),
+            family_history: data.getAll("family_history"),
+            smoking: data.get("smoking"),
+            alcohol: data.get("alcohol"),
+            exercise: data.get("exercise"),
+            screening_type: type === "occupational-health" ? record?.visit_reason : null,
+          },
+          consents: {
+            data_use: data.get("data_use") === "on",
+            declaration: data.get("declaration") === "on",
+            employer_insurer_disclosure: type === "occupational-health" ? data.get("employer_insurer_disclosure") === "on" : false,
+          },
+          signature_metadata: { method: "typed_confirmation", signed_at: new Date().toISOString(), signer_name: record?.patient_name },
+          confirmed_prefill_fields: ["full_name", "identity_type", "masked_identity", "date_of_birth", "email", "country_code", "phone", "address", "postal_code", "ethnicity", "sex"],
+        }),
+      });
+      await load();
+      setStage(5);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Questionnaire could not be saved");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   useEffect(() => {
     const hasActiveDocument = record?.documents?.some((document) => ["QUEUED", "PROCESSING"].includes(document.status));
@@ -170,7 +220,7 @@ export default function PatientCase() {
       return;
     }
     setError("");
-    setStage(4);
+    setStage(6);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -186,18 +236,23 @@ export default function PatientCase() {
     }
   }
 
-  if (error && !record) return <main className="patientJourney"><div className="alert error">{error}</div></main>;
+  if (error && !record) return <main className="patientJourney"><section className="panel"><h1>Open your secure registration</h1><p className="muted">Enter the one-time bootstrap code shared separately by the clinic. Codes never appear in the URL.</p><label>One-time code<input value={bootstrapCode} onChange={(event) => setBootstrapCode(event.target.value)} /></label><button className="button primary wide" disabled={busy || bootstrapCode.length < 16} onClick={() => void redeemAccess()}>Open registration</button><div className="alert error">{error}</div></section></main>;
   if (!record) return <main className="patientJourney"><div className="loading">Loading registration…</div></main>;
 
   const editable = ["DRAFT", "NEEDS_ACTION"].includes(record.status);
   const documents = record.documents || [];
 
-  if (editable && stage === 3) {
+  if (editable && stage === 4) {
+    const occupational = record.visit_reason.includes("occupational") || record.visit_reason.includes("employer_insurer");
+    return <main className="patientJourney"><Progress active={4} /><section className="panel intakePanel"><span className="eyebrow">Step 4 of 6 · {occupational ? "Occupational Health" : "General Health"} questionnaire v1.0</span><h1>Confirm once, reuse safely</h1><p className="muted">Your profile has prefilled 11 repeated demographic fields. Confirm them here instead of re-entering them.</p><div className="prefillBanner">Prefilled: {record.patient_name} · ID ••••{record.id_last4} · {record.patient_email}</div><form className="formGrid" onSubmit={saveQuestionnaire}><label>Current medication?<select name="current_medication" defaultValue="no"><option value="no">No</option><option value="yes">Yes</option></select></label><label>Medication details<input name="medication_details" placeholder="If applicable" /></label><label>Drug allergies?<select name="drug_allergies" defaultValue="no"><option value="no">No</option><option value="yes">Yes</option></select></label><label>Allergy details<input name="allergy_details" placeholder="If applicable" /></label><fieldset><legend>Personal history</legend><label><input type="checkbox" name="personal_history" value="diabetes" /> Diabetes</label><label><input type="checkbox" name="personal_history" value="hypertension" /> Hypertension</label></fieldset><fieldset><legend>Family history</legend><label><input type="checkbox" name="family_history" value="diabetes" /> Diabetes</label><label><input type="checkbox" name="family_history" value="heart_disease" /> Heart disease</label></fieldset><label>Smoking<select name="smoking"><option value="never">Never</option><option value="former">Former</option><option value="current">Current</option></select></label><label>Alcohol<select name="alcohol"><option value="none">None</option><option value="occasional">Occasional</option><option value="regular">Regular</option></select></label><label>Exercise<select name="exercise"><option value="regular">Regular</option><option value="occasional">Occasional</option><option value="none">None</option></select></label><div className="full consentChecks"><label><input required type="checkbox" name="data_use" /> I consent to this synthetic data being used for this administrative registration.</label>{occupational && <label><input required type="checkbox" name="employer_insurer_disclosure" /> I consent to the declared administrative information being disclosed to the fictional employer/insurer.</label>}<label><input required type="checkbox" name="declaration" /> I declare that these fictional demo responses are correct.</label></div>{error && <div className="alert error full">{error}</div>}<button className="button primary full" disabled={busy}>{busy ? "Saving…" : "Confirm and continue to documents"}</button></form></section></main>;
+  }
+
+  if (editable && stage === 5) {
     return (
       <main className="patientJourney patientUploadJourney">
-        <Progress active={3} />
+        <Progress active={5} />
         <section className="panel uploadPanel">
-          <span className="eyebrow">Step 3 of 4 · Supporting documents</span>
+          <span className="eyebrow">Step 5 of 6 · Supporting documents</span>
           <h1>Upload anything relevant</h1>
           <p className="uploadLead">Please upload the relevant documents (insurance medical chit, government letter for check-up, referral letter, insurance e-card, etc.).</p>
           <div className={`dropZone ${dragging ? "dragging" : ""}`} onDragEnter={() => setDragging(true)} onDragLeave={() => setDragging(false)} onDragOver={(event) => event.preventDefault()} onDrop={dropFiles}>
@@ -247,12 +302,12 @@ export default function PatientCase() {
     );
   }
 
-  if (editable && stage === 4) {
+  if (editable && stage === 6) {
     return (
       <main className="patientJourney">
-        <Progress active={4} />
+        <Progress active={6} />
         <section className="panel reviewPanel">
-          <span className="eyebrow">Step 4 of 4 · Review</span>
+          <span className="eyebrow">Step 6 of 6 · Review</span>
           <h1>Check before submitting</h1>
           <p className="muted">The clinic will review any model-read information. This is not an identity check or coverage decision.</p>
           <dl className="reviewSummary">
@@ -264,7 +319,7 @@ export default function PatientCase() {
           {documents.some((document) => ["QUEUED", "PROCESSING"].includes(document.status)) && <div className="alert info">You can submit now. Secure document reading will continue in the background.</div>}
           <div className="declaration"><span>✓</span><p>I understand that clinic staff must check my original identity document, e-card, and supporting documents in person. Any package or payment interpretation is preliminary.</p></div>
           {error && <div className="alert error" role="alert">{error}</div>}
-          <div className="reviewActions"><button className="button secondary" type="button" onClick={() => setStage(3)}>Back to documents</button><button className="button primary" type="button" disabled={busy} onClick={() => void submitCase()}>{busy ? "Submitting…" : "Submit for clinic review"}</button></div>
+          <div className="reviewActions"><button className="button secondary" type="button" onClick={() => setStage(5)}>Back to documents</button><button className="button primary" type="button" disabled={busy} onClick={() => void submitCase()}>{busy ? "Submitting…" : "Submit for clinic review"}</button></div>
         </section>
       </main>
     );
@@ -272,7 +327,7 @@ export default function PatientCase() {
 
   return (
     <main className="patientJourney">
-      <Progress active={4} />
+      <Progress active={6} />
       <div className="caseHeader"><div><span className="eyebrow">{record.reference}</span><h1>{prettyStatus(record.status)}</h1></div><span className={`status ${record.status.toLowerCase()}`}>{prettyStatus(record.status)}</span></div>
       {record.ai_provider === "fixture" && <div className="alert info">Demo fixture mode is active. Live judging uses the configured AGNES image model.</div>}
       {record.ai_provider === "agnes" && <div className="alert agnes"><strong>AGNES live parsing complete.</strong><br />The clinic will verify the extracted administrative details.</div>}

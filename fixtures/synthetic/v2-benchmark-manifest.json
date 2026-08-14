@@ -1,0 +1,18 @@
+{
+  "manifest_version": "clinicpass-v2-synthetic-2026.08.1",
+  "data_classification": "synthetic-only",
+  "scope": "Deterministic eligibility and provenance regression; not live AGNES extraction performance",
+  "scenarios": [
+    {"id": "valid-clean-package", "expected_outcome": "PROVISIONALLY_ELIGIBLE"},
+    {"id": "expired-document", "expected_outcome": "BLOCKED", "change": {"valid_to": "2026-12-31"}},
+    {"id": "wrong-patient", "expected_outcome": "BLOCKED", "change": {"patient_name": "Different Synthetic Patient"}},
+    {"id": "wrong-clinic", "expected_outcome": "BLOCKED", "change": {"clinic_id": "clinic-west"}},
+    {"id": "unknown-organisation", "expected_outcome": "BLOCKED", "change": {"organization_code": "UNKNOWN-ORG"}},
+    {"id": "unknown-package", "expected_outcome": "BLOCKED", "change": {"package_code": "UNKNOWN-PACKAGE"}},
+    {"id": "service-outside-package", "expected_outcome": "BLOCKED", "requested_services": ["MRI"]},
+    {"id": "conflicting-documents", "expected_outcome": "BLOCKED", "mode": "conflict"},
+    {"id": "low-quality-image", "expected_outcome": "BLOCKED", "mode": "unsupported"},
+    {"id": "provider-failure", "expected_outcome": "BLOCKED", "mode": "provider_failure"},
+    {"id": "documentless-review", "expected_outcome": "REVIEW_REQUIRED", "mode": "documentless"}
+  ]
+}

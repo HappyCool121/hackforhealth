@@ -1,9 +1,9 @@
 {
   "swagger": "2.0",
   "info": {
-    "title": "ClinicPass Staff Actions",
-    "description": "Administrative pre-registration actions. Never use for clinical decisions, remote identity verification, or coverage guarantees.",
-    "version": "0.1.0"
+    "title": "ClinicPass V2 Staff Actions",
+    "description": "Provisional administrative eligibility actions. Never use for clinical decisions, remote identity or e-card verification, or coverage/reimbursement guarantees.",
+    "version": "2.0.0"
   },
   "host": "localhost:8080",
   "basePath": "/api/v1/copilot",
@@ -16,99 +16,32 @@
       "flow": "accessCode",
       "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
       "tokenUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
-      "scopes": { "api://REPLACE_WITH_APP_ID/ClinicPass.Access": "Use ClinicPass as the signed-in clinic staff member" }
+      "scopes": {"api://REPLACE_WITH_APP_ID/ClinicPass.Access": "Use ClinicPass as the signed-in clinic staff member"}
     }
   },
-  "security": [{ "oauth2": ["api://REPLACE_WITH_APP_ID/ClinicPass.Access"] }],
+  "security": [{"oauth2": ["api://REPLACE_WITH_APP_ID/ClinicPass.Access"]}],
   "paths": {
-    "/cases": {
-      "get": {
-        "operationId": "searchCases",
-        "summary": "Search clinic cases",
-        "parameters": [
-          { "name": "search", "in": "query", "type": "string", "required": false },
-          { "name": "status", "in": "query", "type": "string", "required": false }
-        ],
-        "responses": { "200": { "description": "Matching cases", "schema": { "type": "array", "items": { "$ref": "#/definitions/CaseSummary" } } } }
-      }
-    },
-    "/cases/{case_id}/summary": {
-      "get": {
-        "operationId": "getCaseSummary",
-        "summary": "Get an administrative readiness summary",
-        "parameters": [{ "$ref": "#/parameters/CaseId" }],
-        "responses": { "200": { "description": "Case summary", "schema": { "type": "object" } } }
-      }
-    },
-    "/cases/{case_id}/exceptions": {
-      "get": {
-        "operationId": "explainExceptions",
-        "summary": "List non-passing deterministic checks",
-        "parameters": [{ "$ref": "#/parameters/CaseId" }],
-        "responses": { "200": { "description": "Exceptions", "schema": { "type": "object" } } }
-      }
-    },
-    "/cases/{case_id}/evidence/{document_id}": {
-      "get": {
-        "operationId": "locateEvidence",
-        "summary": "Locate grounded evidence for a document",
-        "parameters": [{ "$ref": "#/parameters/CaseId" }, { "name": "document_id", "in": "path", "required": true, "type": "string" }],
-        "responses": { "200": { "description": "Page evidence", "schema": { "type": "object" } } }
-      }
-    },
-    "/cases/{case_id}/patient-request/draft": {
-      "post": {
-        "operationId": "draftPatientRequest",
-        "summary": "Draft but do not send a patient request",
-        "parameters": [{ "$ref": "#/parameters/CaseId" }],
-        "responses": { "200": { "description": "Draft requiring staff confirmation", "schema": { "type": "object" } } }
-      }
-    },
-    "/cases/{case_id}/patient-request": {
-      "post": {
-        "operationId": "submitPatientRequest",
-        "summary": "Send a confirmed information request",
-        "parameters": [{ "$ref": "#/parameters/CaseId" }, { "name": "body", "in": "body", "required": true, "schema": { "$ref": "#/definitions/ReviewAction" } }],
-        "responses": { "200": { "description": "Updated case", "schema": { "$ref": "#/definitions/CaseSummary" } } }
-      }
-    },
-    "/cases/{case_id}/decision": {
-      "post": {
-        "operationId": "recordReviewDecision",
-        "summary": "Record a confirmed staff review decision",
-        "parameters": [{ "$ref": "#/parameters/CaseId" }, { "name": "body", "in": "body", "required": true, "schema": { "$ref": "#/definitions/ReviewAction" } }],
-        "responses": { "200": { "description": "Updated case", "schema": { "$ref": "#/definitions/CaseSummary" } } }
-      }
-    }
+    "/cases": {"get": {"operationId": "searchCases", "summary": "Search clinic cases", "parameters": [{"name": "search", "in": "query", "type": "string"}, {"name": "status", "in": "query", "type": "string"}], "responses": {"200": {"description": "Matching clinic-scoped cases"}}}},
+    "/cases/{case_id}/summary": {"get": {"operationId": "getCaseSummary", "summary": "Get masked case summary", "parameters": [{"$ref": "#/parameters/CaseId"}], "responses": {"200": {"description": "Case summary"}}}},
+    "/cases/{case_id}/evaluation": {"get": {"operationId": "getEligibilityEvaluation", "summary": "Get or refresh eligibility evaluation", "parameters": [{"$ref": "#/parameters/CaseId"}], "responses": {"200": {"description": "Versioned evaluation and findings"}}}},
+    "/cases/{case_id}/findings": {"get": {"operationId": "explainFindings", "summary": "Explain deterministic findings", "parameters": [{"$ref": "#/parameters/CaseId"}], "responses": {"200": {"description": "PASS, REVIEW and FAIL findings"}}}},
+    "/cases/{case_id}/evidence/{document_id}": {"get": {"operationId": "locateFieldEvidence", "summary": "Locate field assertions and grounded evidence", "parameters": [{"$ref": "#/parameters/CaseId"}, {"name": "document_id", "in": "path", "required": true, "type": "string"}], "responses": {"200": {"description": "Authorized evidence"}}}},
+    "/cases/{case_id}/export-status": {"get": {"operationId": "getExportStatus", "summary": "Get canonical export status", "parameters": [{"$ref": "#/parameters/CaseId"}], "responses": {"200": {"description": "Latest export attempt"}}}},
+    "/cases/{case_id}/patient-request/draft": {"post": {"operationId": "draftPatientRequest", "summary": "Draft without sending", "parameters": [{"$ref": "#/parameters/CaseId"}], "responses": {"200": {"description": "Draft requiring confirmation"}}}},
+    "/cases/{case_id}/correction/draft": {"post": {"operationId": "draftCorrectionNote", "summary": "Draft a correction note", "parameters": [{"$ref": "#/parameters/CaseId"}, {"$ref": "#/parameters/CorrectionBody"}], "responses": {"200": {"description": "Draft requiring confirmation"}}}},
+    "/cases/{case_id}/patient-request": {"post": {"operationId": "submitPatientRequest", "summary": "Submit a confirmed patient request", "parameters": [{"$ref": "#/parameters/CaseId"}, {"name": "body", "in": "body", "required": true, "schema": {"$ref": "#/definitions/ReviewAction"}}], "responses": {"200": {"description": "Updated case"}}}},
+    "/cases/{case_id}/assertions/{assertion_id}": {"patch": {"operationId": "recordCorrection", "summary": "Record an audited correction", "parameters": [{"$ref": "#/parameters/CaseId"}, {"name": "assertion_id", "in": "path", "required": true, "type": "string"}, {"$ref": "#/parameters/CorrectionBody"}], "responses": {"200": {"description": "Corrected assertion; eligibility stale"}}}},
+    "/cases/{case_id}/override-requests": {"post": {"operationId": "requestOverride", "summary": "Request manager review of one finding", "parameters": [{"$ref": "#/parameters/CaseId"}, {"name": "body", "in": "body", "required": true, "schema": {"$ref": "#/definitions/OverrideRequest"}}], "responses": {"200": {"description": "Override request"}}}},
+    "/cases/{case_id}/decision": {"post": {"operationId": "recordDecision", "summary": "Record a freshness-gated decision", "parameters": [{"$ref": "#/parameters/CaseId"}, {"name": "body", "in": "body", "required": true, "schema": {"$ref": "#/definitions/ReviewAction"}}], "responses": {"200": {"description": "Updated case"}}}},
+    "/cases/{case_id}/export": {"post": {"operationId": "retryExport", "summary": "Create or replay an idempotent export", "parameters": [{"$ref": "#/parameters/CaseId"}, {"name": "Idempotency-Key", "in": "header", "required": true, "type": "string", "minLength": 8}], "responses": {"200": {"description": "Export acceptance or replay"}}}}
   },
   "parameters": {
-    "CaseId": { "name": "case_id", "in": "path", "required": true, "type": "string", "description": "ClinicPass case UUID" }
+    "CaseId": {"name": "case_id", "in": "path", "required": true, "type": "string", "description": "ClinicPass case UUID"},
+    "CorrectionBody": {"name": "body", "in": "body", "required": true, "schema": {"$ref": "#/definitions/Correction"}}
   },
   "definitions": {
-    "CaseSummary": {
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "reference": { "type": "string" },
-        "patient_name": { "type": "string" },
-        "visit_reason": { "type": "string", "description": "Patient-declared broad visit reason" },
-        "document_requirement": { "type": "string", "enum": ["yes", "no", "unsure"] },
-        "identity_source": { "type": "string", "enum": ["manual", "singpass_demo"], "description": "singpass_demo is synthetic and never means verified identity" },
-        "queue_number": { "type": "string", "description": "Patient-visible live demo queue number" },
-        "queue_status": { "type": "string", "enum": ["NOT_ISSUED", "WAITING_FOR_REVIEW", "PROCEED_TO_REGISTRATION", "CALLED_TO_ROOM"] },
-        "room_assignment": { "type": "string", "description": "Current patient destination, updated by clinic workflow actions" },
-        "status": { "type": "string" },
-        "rules": { "type": "array", "items": { "type": "object" } }
-      }
-    },
-    "ReviewAction": {
-      "type": "object",
-      "required": ["action", "reason"],
-      "properties": {
-        "action": { "type": "string", "enum": ["request_information", "approve", "cancel"] },
-        "reason": { "type": "string", "minLength": 3 },
-        "override_failures": { "type": "boolean", "default": false }
-      }
-    }
+    "ReviewAction": {"type": "object", "required": ["action", "reason"], "properties": {"action": {"type": "string", "enum": ["request_information", "approve", "cancel"]}, "reason": {"type": "string", "minLength": 3}, "override_failures": {"type": "boolean", "enum": [false], "description": "Inline overrides are prohibited"}}},
+    "Correction": {"type": "object", "required": ["corrected_value", "reason"], "properties": {"corrected_value": {"type": "string"}, "reason": {"type": "string", "minLength": 3}}},
+    "OverrideRequest": {"type": "object", "required": ["finding_id", "reason"], "properties": {"finding_id": {"type": "string"}, "reason": {"type": "string", "minLength": 5}}}
   }
 }

@@ -12,7 +12,11 @@ def run() -> None:
             document = db.scalar(
                 select(Document)
                 .join(Case, Case.id == Document.case_id)
-                .where(Document.status == "QUEUED", Case.status.in_({"DRAFT", "NEEDS_ACTION", "PROCESSING"}))
+                .where(
+                    Document.status == "QUEUED",
+                    Document.scan_status == "CLEAN",
+                    Case.status.in_({"DRAFT", "NEEDS_ACTION", "PROCESSING"}),
+                )
                 .order_by(Document.created_at)
                 .with_for_update(skip_locked=True)
             )

@@ -13,18 +13,23 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-for item in README.md SECURITY.md LICENSE Makefile compose.yaml .env.example apps services infra docs copilot fixtures scripts output; do
+for item in README.md SECURITY.md LICENSE Makefile compose.yaml .env.example .github apps services infra docs copilot fixtures scripts output; do
+  if [ ! -e "$root_dir/$item" ]; then
+    if [ "$item" = "output" ]; then continue; fi
+    echo "Refusing export: required source item is missing: $item" >&2
+    exit 1
+  fi
   rsync -a \
-    --exclude node_modules --exclude .next --exclude .venv --exclude .uv-cache \
+    --exclude node_modules --exclude .next --exclude .venv --exclude .uv-cache --exclude .npm-cache \
     --exclude __pycache__ --exclude .pytest_cache --exclude .mypy_cache --exclude .ruff_cache \
-    --exclude .playwright-cli --exclude '*.tsbuildinfo' \
+    --exclude .playwright-cli --exclude test-results --exclude '*.tsbuildinfo' \
     "$root_dir/$item" "$stage_dir/"
 done
 
 cp "$root_dir/scripts/public.gitignore" "$stage_dir/.gitignore"
 
-find "$stage_dir" -type d \( -name node_modules -o -name .next -o -name __pycache__ -o -name .pytest_cache -o -name .mypy_cache -o -name .ruff_cache \) -prune -exec rm -rf {} +
-find "$stage_dir" -type f \( -name '*.pyc' -o -name '*.log' -o -name '.DS_Store' \) -delete
+find "$stage_dir" -type d \( -name node_modules -o -name .next -o -name test-results -o -name __pycache__ -o -name .pytest_cache -o -name .mypy_cache -o -name .ruff_cache -o -name .npm-cache \) -prune -exec rm -rf {} +
+find "$stage_dir" -type f \( -name '*.pyc' -o -name '*.log' -o -name '*.db' -o -name '*.db-shm' -o -name '*.db-wal' -o -name '.DS_Store' \) -delete
 touch "$stage_dir/$marker_name"
 
 if grep -R -E '[A]GNES_API_KEY=[A-Za-z0-9_-]{16,}|B[E]GIN (RSA |EC |OPENSSH )?PRIVATE KEY' "$stage_dir" --exclude='.env.example' >/dev/null 2>&1; then

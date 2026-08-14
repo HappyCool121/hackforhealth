@@ -17,6 +17,7 @@ dependencies = [
   "python-dateutil==2.9.0.post0",
   "email-validator==2.2.0",
   "alembic==1.16.5",
+  "cryptography==49.0.0",
 ]
 
 [project.optional-dependencies]
@@ -27,6 +28,7 @@ dev = [
   "types-python-dateutil==2.9.0.20250822",
   "reportlab>=4.4,<5",
   "pypdf>=5,<7",
+  "jsonschema==4.26.0",
 ]
 
 [tool.setuptools.packages.find]
